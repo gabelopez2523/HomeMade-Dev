@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { ImageUpload } from '@/components/ImageUpload'
+import { CATEGORY_OPTIONS } from '@/lib/constants'
 
 export default function NewListing() {
   const router = useRouter()
@@ -19,6 +20,8 @@ export default function NewListing() {
     city: '',
     state: '',
     zipCode: '',
+    category: 'OTHER',
+    servingDescription: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -69,6 +72,7 @@ export default function NewListing() {
           city: formData.city || null,
           state: formData.state || null,
           zipCode: formData.zipCode || null,
+          servingDescription: formData.servingDescription || null,
         }),
       })
 
@@ -144,8 +148,26 @@ export default function NewListing() {
         </div>
 
         <div>
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+            Category
+          </label>
+          <select
+            id="category"
+            value={formData.category}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-black"
+          >
+            {CATEGORY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
           <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-            Price ($) *
+            Price per Order ($) *
           </label>
           <input
             id="price"
@@ -157,6 +179,22 @@ export default function NewListing() {
             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-black"
           />
+          <p className="mt-1 text-xs text-gray-500">This is the price per order / serving.</p>
+        </div>
+
+        <div>
+          <label htmlFor="servingDescription" className="block text-sm font-medium text-gray-700 mb-1">
+            Serving Description
+          </label>
+          <textarea
+            id="servingDescription"
+            value={formData.servingDescription}
+            onChange={(e) => setFormData({ ...formData, servingDescription: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-black"
+            rows={2}
+            placeholder="e.g., 1 dozen tamales, feeds 2–3 people"
+          />
+          <p className="mt-1 text-xs text-gray-500">Describe what's included in one order.</p>
         </div>
 
         <ImageUpload

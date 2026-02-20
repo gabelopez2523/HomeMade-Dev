@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { ImageUpload } from '@/components/ImageUpload'
+import { CATEGORY_OPTIONS } from '@/lib/constants'
 
 interface FoodListing {
   id: string
@@ -17,6 +18,7 @@ interface FoodListing {
   city: string | null
   state: string | null
   zipCode: string | null
+  category: string | null
   isActive: boolean
 }
 
@@ -36,6 +38,8 @@ export default function EditListing() {
     city: '',
     state: '',
     zipCode: '',
+    category: 'OTHER',
+    servingDescription: '',
     isActive: true,
   })
   const [loading, setLoading] = useState(true)
@@ -67,6 +71,8 @@ export default function EditListing() {
           city: data.city || '',
           state: data.state || '',
           zipCode: data.zipCode || '',
+          category: data.category || 'OTHER',
+          servingDescription: data.servingDescription || '',
           isActive: data.isActive,
         })
       }
@@ -96,6 +102,7 @@ export default function EditListing() {
           city: formData.city || null,
           state: formData.state || null,
           zipCode: formData.zipCode || null,
+          servingDescription: formData.servingDescription || null,
         }),
       })
 
@@ -192,8 +199,26 @@ export default function EditListing() {
         </div>
 
         <div>
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+            Category
+          </label>
+          <select
+            id="category"
+            value={formData.category}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-black"
+          >
+            {CATEGORY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
           <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-            Price ($) *
+            Price per Order ($) *
           </label>
           <input
             id="price"
@@ -205,6 +230,22 @@ export default function EditListing() {
             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-black"
           />
+          <p className="mt-1 text-xs text-gray-500">This is the price per order / serving.</p>
+        </div>
+
+        <div>
+          <label htmlFor="servingDescription" className="block text-sm font-medium text-gray-700 mb-1">
+            Serving Description
+          </label>
+          <textarea
+            id="servingDescription"
+            value={formData.servingDescription}
+            onChange={(e) => setFormData({ ...formData, servingDescription: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-black"
+            rows={2}
+            placeholder="e.g., 1 dozen tamales, feeds 2–3 people"
+          />
+          <p className="mt-1 text-xs text-gray-500">Describe what's included in one order.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

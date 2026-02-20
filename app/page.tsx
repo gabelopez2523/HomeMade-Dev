@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { LocationSearch } from '@/components/LocationSearch'
+import { SearchBar } from '@/components/SearchBar'
 
 interface FoodListing {
   id: string
@@ -17,6 +17,8 @@ interface FoodListing {
   city: string | null
   state: string | null
   zipCode: string | null
+  category: string | null
+  servingDescription: string | null
   seller: {
     user: {
       name: string
@@ -28,6 +30,8 @@ function ListingCard({ listing }: { listing: FoodListing }) {
   return (
     <Link
       href={`/listings/${listing.id}`}
+      target="_blank"
+      rel="noopener noreferrer"
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
     >
       {listing.imageUrl && (
@@ -53,9 +57,15 @@ function ListingCard({ listing }: { listing: FoodListing }) {
           </p>
         )}
         <div className="flex justify-between items-center">
-          <span className="text-2xl font-bold text-primary-600">
-            ${listing.price.toFixed(2)}
-          </span>
+          <div>
+            <span className="text-2xl font-bold text-primary-600">
+              ${listing.price.toFixed(2)}
+            </span>
+            <span className="text-xs text-gray-500 ml-1">/ order</span>
+            {listing.servingDescription && (
+              <p className="text-xs text-gray-500 mt-0.5">{listing.servingDescription}</p>
+            )}
+          </div>
           {listing.city && listing.state && (
             <span className="text-sm text-gray-500">
               {listing.city}, {listing.state}
@@ -73,69 +83,137 @@ function ListingCard({ listing }: { listing: FoodListing }) {
 export default function Home() {
   const [listings, setListings] = useState<FoodListing[]>([])
   const [nearbyListings, setNearbyListings] = useState<FoodListing[]>([])
+  const [suggestions, setSuggestions] = useState<FoodListing[]>([])
   const [loading, setLoading] = useState(false)
-  const [loadingNearby, setLoadingNearby] = useState(false)
-  const [zipCode, setZipCode] = useState('')
-  const [query, setQuery] = useState('')
   const [searched, setSearched] = useState(false)
+  const [autoDetecting, setAutoDetecting] = useState(true)
+  const [detectedLocation, setDetectedLocation] = useState('')
+  const [detectedZip, setDetectedZip] = useState('')
+  const [searchLocation, setSearchLocation] = useState('')
+  const [initLoc, setInitLoc] = useState('')
+  const [initQuery, setInitQuery] = useState('')
 
-  useEffect(() => {
-    if (zipCode) {
-      fetchListings(zipCode, query)
-      fetchNearbyListings(zipCode, query)
-    }
-  }, [zipCode, query])
+  const performSearch = useCallback(async (location: string, query: string) => {
+    // If the user hasn't changed the display location, use the detected zip for API calls
+    const effectiveLocation = (!location || location === detectedLocation)
+      ? detectedZip
+      : location
+    if (!effectiveLocation && !query) return
 
-  const fetchListings = async (zip: string, q: string) => {
+    // Persist search state in the URL and sessionStorage so Back navigation restores results
+    const urlParams = new URLSearchParams()
+    if (location || effectiveLocation) urlParams.set('location', location || effectiveLocation)
+    if (query) urlParams.set('q', query)
+    const returnUrl = urlParams.toString() ? `/?${urlParams}` : '/'
+    window.history.replaceState(null, '', returnUrl)
+    sessionStorage.setItem('searchReturn', returnUrl)
+
     setLoading(true)
+    setSearched(true)
+    setSearchLocation(detectedLocation || effectiveLocation)
+
     try {
-      const params = new URLSearchParams({
-        onlyActive: 'true',
-        zipCode: zip,
-      })
-      if (q.trim()) {
-        params.set('q', q.trim())
+      // Primary search: exact location
+      const params = new URLSearchParams({ onlyActive: 'true' })
+      if (effectiveLocation) params.set('location', effectiveLocation)
+      if (query) params.set('q', query)
+
+      // Nearby search: 25mi radius
+      const nearbyParams = new URLSearchParams({ onlyActive: 'true' })
+      if (effectiveLocation) {
+        nearbyParams.set('location', effectiveLocation)
+        nearbyParams.set('nearby', 'true')
+        nearbyParams.set('radius', '25')
       }
-      const response = await fetch(`/api/listings?${params.toString()}`)
-      if (response.ok) {
-        const data = await response.json()
-        setListings(data)
+      if (query) {
+        nearbyParams.set('q', query)
+        nearbyParams.set('suggestCategory', 'true')
+      }
+
+      const [primaryRes, nearbyRes] = await Promise.all([
+        fetch(`/api/listings?${params}`),
+        effectiveLocation ? fetch(`/api/listings?${nearbyParams}`) : Promise.resolve(null),
+      ])
+
+      if (primaryRes.ok) {
+        const primaryData = await primaryRes.json()
+        setListings(Array.isArray(primaryData) ? primaryData : primaryData.listings ?? [])
+      }
+
+      if (nearbyRes?.ok) {
+        const nearbyData = await nearbyRes.json()
+        if (Array.isArray(nearbyData)) {
+          setNearbyListings(nearbyData)
+          setSuggestions([])
+        } else {
+          setNearbyListings(nearbyData.listings ?? [])
+          setSuggestions(nearbyData.suggestions ?? [])
+        }
+      } else {
+        setNearbyListings([])
+        setSuggestions([])
       }
     } catch (error) {
-      console.error('Error fetching listings:', error)
+      console.error('Search error:', error)
     } finally {
       setLoading(false)
-      setSearched(true)
     }
-  }
+  }, [detectedZip, detectedLocation])
 
-  const fetchNearbyListings = async (zip: string, q: string) => {
-    setLoadingNearby(true)
-    try {
-      const params = new URLSearchParams({
-        onlyActive: 'true',
-        nearZip: zip,
-        radius: '25',
-        excludeZip: zip,
-      })
-      if (q.trim()) {
-        params.set('q', q.trim())
-      }
-      const response = await fetch(`/api/listings?${params.toString()}`)
-      if (response.ok) {
-        const data = await response.json()
-        setNearbyListings(data)
-      }
-    } catch (error) {
-      console.error('Error fetching nearby listings:', error)
-    } finally {
-      setLoadingNearby(false)
+  const handleSearch = useCallback(({ location, query }: { location: string; query: string }) => {
+    performSearch(location, query)
+  }, [performSearch])
+
+  // Restore search from URL params on mount (e.g. when pressing Back from a listing)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const loc = params.get('location') || ''
+    const q = params.get('q') || ''
+    if (loc || q) {
+      setInitLoc(loc)
+      setInitQuery(q)
+      performSearch(loc, q)
     }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const handleLocationChange = (zip: string) => {
-    setZipCode(zip)
-  }
+  // Auto-detect location on mount
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setAutoDetecting(false)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const res = await fetch(
+            `/api/geocode?lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+          )
+          const data = await res.json()
+          if (data.zipCode) {
+            setDetectedZip(data.zipCode)
+            const display = data.city && data.state
+              ? `${data.city}, ${data.state}`
+              : data.zipCode
+            setDetectedLocation(display)
+          }
+        } catch {
+          // Ignore — user can manually enter location
+        } finally {
+          setAutoDetecting(false)
+        }
+      },
+      () => {
+        setAutoDetecting(false)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 300000,
+      }
+    )
+  }, [])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -146,20 +224,13 @@ export default function Home() {
         <p className="text-xl text-gray-600 mb-6">
           Find homemade meals from local cooks near you
         </p>
-        <div className="mb-4">
-          <label htmlFor="food-search" className="block text-sm font-medium text-gray-700 mb-1">
-            Search for a food
-          </label>
-          <input
-            id="food-search"
-            type="text"
-            placeholder="e.g. lasagna, tamales, banana bread"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="w-full md:w-1/3 rounded-md border border-gray-300 px-3 py-2 text-black placeholder-gray-500 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-          />
-        </div>
-        <LocationSearch onLocationChange={handleLocationChange} currentZip={zipCode} />
+        <SearchBar
+          onSearch={handleSearch}
+          detectedLocation={detectedLocation}
+          detecting={autoDetecting}
+          initialLocation={initLoc}
+          initialQuery={initQuery}
+        />
       </div>
 
       {loading ? (
@@ -169,52 +240,71 @@ export default function Home() {
       ) : !searched ? (
         <div className="text-center py-16">
           <p className="text-gray-500 text-lg">
-            Enter your zip code or use your location to find homemade food nearby.
+            Enter a location and search for homemade food nearby.
           </p>
         </div>
       ) : (
         <>
-          {/* Exact zip code listings */}
-          {listings.length === 0 ? (
+          {/* Exact location listings */}
+          {listings.length === 0 && nearbyListings.length === 0 && suggestions.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">
-                No food listings found in your zip code.
+                No food listings found in this area.
               </p>
             </div>
           ) : (
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                In Your Area ({zipCode})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {listings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Nearby listings within 25 miles */}
-          {loadingNearby ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">Loading nearby listings...</p>
-            </div>
-          ) : nearbyListings.length > 0 && (
-            <div className="mt-8">
-              <div className="bg-gray-50 rounded-xl p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                  Foods Near You
-                </h2>
-                <p className="text-gray-500 text-sm mb-4">
-                  Listings within 25 miles of {zipCode}
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {nearbyListings.map((listing) => (
-                    <ListingCard key={listing.id} listing={listing} />
-                  ))}
+            <>
+              {listings.length > 0 && (
+                <div className="mb-12">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                    In Your Area {searchLocation && `(${searchLocation})`}
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {listings.map((listing) => (
+                      <ListingCard key={listing.id} listing={listing} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </div>
+              )}
+
+              {/* Nearby listings within 25 miles */}
+              {nearbyListings.length > 0 && (
+                <div className="mt-8">
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                      Foods Near You
+                    </h2>
+                    <p className="text-gray-500 text-sm mb-4">
+                      Listings within 25 miles {searchLocation && `of ${searchLocation}`}
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {nearbyListings.map((listing) => (
+                        <ListingCard key={listing.id} listing={listing} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Category-based suggestions */}
+              {suggestions.length > 0 && (
+                <div className="mt-8">
+                  <div className="bg-amber-50 rounded-xl p-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                      Similar Foods Nearby
+                    </h2>
+                    <p className="text-gray-500 text-sm mb-4">
+                      We couldn&apos;t find an exact match, but here are similar items in the same category
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {suggestions.map((listing) => (
+                        <ListingCard key={listing.id} listing={listing} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </>
       )}

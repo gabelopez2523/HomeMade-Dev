@@ -3,18 +3,21 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { FoodCategory } from '@prisma/client'
 
 const updateListingSchema = z.object({
   title: z.string().min(1).optional(),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   price: z.number().positive().optional(),
   imageUrl: z.string().url().optional().nullable(),
-  listingDate: z.string().datetime().optional(),
-  pickupTime: z.string().datetime().optional(),
-  pickupLocation: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zipCode: z.string().optional(),
+  listingDate: z.string().min(1).optional(),
+  pickupTime: z.string().min(1).optional(),
+  pickupLocation: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
+  zipCode: z.string().optional().nullable(),
+  category: z.nativeEnum(FoodCategory).optional(),
+  servingDescription: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
 })
 

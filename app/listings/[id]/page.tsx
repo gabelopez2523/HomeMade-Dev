@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Image from 'next/image'
 
 interface FoodListing {
@@ -16,6 +16,7 @@ interface FoodListing {
   city: string | null
   state: string | null
   zipCode: string | null
+  servingDescription: string | null
   isActive: boolean
   seller: {
     user: {
@@ -32,7 +33,6 @@ interface FoodListing {
 
 export default function ListingDetail() {
   const params = useParams()
-  const router = useRouter()
   const [listing, setListing] = useState<FoodListing | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -72,13 +72,6 @@ export default function ListingDetail() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <button
-        onClick={() => router.back()}
-        className="mb-4 text-primary-600 hover:text-primary-700"
-      >
-        &larr; Back
-      </button>
-
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         {listing.imageUrl && (
           <div className="relative h-96 w-full">
@@ -105,10 +98,13 @@ export default function ListingDetail() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Price</h3>
+              <h3 className="text-sm font-medium text-gray-500 mb-1">Price per Order</h3>
               <p className="text-3xl font-bold text-primary-600">
                 ${listing.price.toFixed(2)}
               </p>
+              {listing.servingDescription && (
+                <p className="text-sm text-gray-500 mt-1">{listing.servingDescription}</p>
+              )}
             </div>
             {listing.city && listing.state && (
               <div>

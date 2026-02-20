@@ -1,0 +1,16 @@
+export const CATEGORY_OPTIONS = [
+  { value: 'MEXICAN', label: 'Mexican' },
+  { value: 'ITALIAN', label: 'Italian' },
+  { value: 'BAKED_GOODS', label: 'Baked Goods' },
+  { value: 'DESSERTS', label: 'Desserts' },
+  { value: 'COMFORT_FOOD', label: 'Comfort Food' },
+  { value: 'ASIAN', label: 'Asian' },
+  { value: 'BBQ', label: 'BBQ' },
+  { value: 'VEGAN', label: 'Vegan' },
+  { value: 'INDIAN', label: 'Indian' },
+  { value: 'MEDITERRANEAN', label: 'Mediterranean' },
+  { value: 'SOUL_FOOD', label: 'Soul Food' },
+  { value: 'SEAFOOD', label: 'Seafood' },
+  { value: 'BREAKFAST', label: 'Breakfast' },
+  { value: 'OTHER', label: 'Other' },
+] as const
