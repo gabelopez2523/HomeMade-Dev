@@ -10,6 +10,7 @@ interface FoodListing {
   description: string | null
   price: number
   imageUrl: string | null
+  imageUrls: string[]
   listingDate: string
   pickupTime: string
   pickupLocation: string | null
@@ -35,6 +36,7 @@ export default function ListingDetail() {
   const params = useParams()
   const [listing, setListing] = useState<FoodListing | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
 
   useEffect(() => {
     fetchListing()
@@ -73,16 +75,42 @@ export default function ListingDetail() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        {listing.imageUrl && (
-          <div className="relative h-96 w-full">
-            <Image
-              src={listing.imageUrl}
-              alt={listing.title}
-              fill
-              className="object-cover"
-            />
-          </div>
-        )}
+        {(() => {
+          const allImages = listing.imageUrls?.length
+            ? listing.imageUrls
+            : listing.imageUrl
+            ? [listing.imageUrl]
+            : []
+          if (!allImages.length) return null
+          return (
+            <div>
+              <div className="relative h-96 w-full">
+                <Image
+                  src={allImages[activeImageIndex]}
+                  alt={listing.title}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              {allImages.length > 1 && (
+                <div className="flex gap-2 p-3 bg-gray-50 overflow-x-auto">
+                  {allImages.map((url, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setActiveImageIndex(i)}
+                      className={`relative flex-shrink-0 w-20 h-20 rounded overflow-hidden border-2 transition-colors ${
+                        i === activeImageIndex ? 'border-primary-500' : 'border-transparent'
+                      }`}
+                    >
+                      <Image src={url} alt={`Photo ${i + 1}`} fill className="object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         <div className="p-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">

@@ -1,5 +1,6 @@
 export const CATEGORY_OPTIONS = [
   { value: 'MEXICAN', label: 'Mexican' },
+  { value: 'LATIN_AMERICAN', label: 'Latin American' },
   { value: 'ITALIAN', label: 'Italian' },
   { value: 'BAKED_GOODS', label: 'Baked Goods' },
   { value: 'DESSERTS', label: 'Desserts' },

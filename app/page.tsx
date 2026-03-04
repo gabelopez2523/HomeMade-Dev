@@ -5,6 +5,23 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { SearchBar } from '@/components/SearchBar'
 
+const CATEGORY_BUTTONS = [
+  { value: 'MEXICAN', label: 'Mexican', emoji: '🌮' },
+  { value: 'LATIN_AMERICAN', label: 'Latin American', emoji: '🫔' },
+  { value: 'ASIAN', label: 'Asian', emoji: '🍜' },
+  { value: 'ITALIAN', label: 'Italian', emoji: '🍝' },
+  { value: 'BAKED_GOODS', label: 'Baked Goods', emoji: '🍞' },
+  { value: 'DESSERTS', label: 'Desserts', emoji: '🧁' },
+  { value: 'BBQ', label: 'BBQ', emoji: '🔥' },
+  { value: 'INDIAN', label: 'Indian', emoji: '🍛' },
+  { value: 'MEDITERRANEAN', label: 'Mediterranean', emoji: '🫒' },
+  { value: 'SOUL_FOOD', label: 'Soul Food', emoji: '🍗' },
+  { value: 'VEGAN', label: 'Vegan', emoji: '🥗' },
+  { value: 'SEAFOOD', label: 'Seafood', emoji: '🦞' },
+  { value: 'BREAKFAST', label: 'Breakfast', emoji: '🍳' },
+  { value: 'COMFORT_FOOD', label: 'Comfort Food', emoji: '🍲' },
+]
+
 interface FoodListing {
   id: string
   title: string
@@ -92,18 +109,20 @@ export default function Home() {
   const [searchLocation, setSearchLocation] = useState('')
   const [initLoc, setInitLoc] = useState('')
   const [initQuery, setInitQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
 
-  const performSearch = useCallback(async (location: string, query: string) => {
+  const performSearch = useCallback(async (location: string, query: string, category = '') => {
     // If the user hasn't changed the display location, use the detected zip for API calls
     const effectiveLocation = (!location || location === detectedLocation)
       ? detectedZip
       : location
-    if (!effectiveLocation && !query) return
+    if (!effectiveLocation && !query && !category) return
 
     // Persist search state in the URL and sessionStorage so Back navigation restores results
     const urlParams = new URLSearchParams()
     if (location || effectiveLocation) urlParams.set('location', location || effectiveLocation)
     if (query) urlParams.set('q', query)
+    if (category) urlParams.set('category', category)
     const returnUrl = urlParams.toString() ? `/?${urlParams}` : '/'
     window.history.replaceState(null, '', returnUrl)
     sessionStorage.setItem('searchReturn', returnUrl)
@@ -117,6 +136,7 @@ export default function Home() {
       const params = new URLSearchParams({ onlyActive: 'true' })
       if (effectiveLocation) params.set('location', effectiveLocation)
       if (query) params.set('q', query)
+      if (category) params.set('category', category)
 
       // Nearby search: 25mi radius
       const nearbyParams = new URLSearchParams({ onlyActive: 'true' })
@@ -129,6 +149,7 @@ export default function Home() {
         nearbyParams.set('q', query)
         nearbyParams.set('suggestCategory', 'true')
       }
+      if (category) nearbyParams.set('category', category)
 
       const [primaryRes, nearbyRes] = await Promise.all([
         fetch(`/api/listings?${params}`),
@@ -161,18 +182,27 @@ export default function Home() {
   }, [detectedZip, detectedLocation])
 
   const handleSearch = useCallback(({ location, query }: { location: string; query: string }) => {
-    performSearch(location, query)
+    setSelectedCategory('')
+    performSearch(location, query, '')
   }, [performSearch])
+
+  const handleCategoryClick = useCallback((categoryValue: string) => {
+    const newCategory = selectedCategory === categoryValue ? '' : categoryValue
+    setSelectedCategory(newCategory)
+    performSearch(detectedLocation, '', newCategory)
+  }, [selectedCategory, detectedLocation, performSearch])
 
   // Restore search from URL params on mount (e.g. when pressing Back from a listing)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const loc = params.get('location') || ''
     const q = params.get('q') || ''
-    if (loc || q) {
+    const cat = params.get('category') || ''
+    if (loc || q || cat) {
       setInitLoc(loc)
       setInitQuery(q)
-      performSearch(loc, q)
+      if (cat) setSelectedCategory(cat)
+      performSearch(loc, q, cat)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -231,6 +261,24 @@ export default function Home() {
           initialLocation={initLoc}
           initialQuery={initQuery}
         />
+
+        {/* Category buttons */}
+        <div className="mt-5 flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          {CATEGORY_BUTTONS.map(({ value, label, emoji }) => (
+            <button
+              key={value}
+              onClick={() => handleCategoryClick(value)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedCategory === value
+                  ? 'bg-orange-500 border-orange-500 text-white'
+                  : 'bg-white border-gray-300 text-gray-700 hover:border-orange-400 hover:text-orange-600'
+              }`}
+            >
+              <span>{emoji}</span>
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (

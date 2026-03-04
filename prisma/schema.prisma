@@ -41,6 +41,7 @@ model SellerProfile {
 
 enum FoodCategory {
   MEXICAN
+  LATIN_AMERICAN
   ITALIAN
   BAKED_GOODS
   DESSERTS
@@ -63,6 +64,7 @@ model FoodListing {
   description     String?
   price           Float
   imageUrl        String?  @map("image_url")
+  imageUrls       String[] @default([]) @map("image_urls")
   listingDate     DateTime @map("listing_date")
   pickupTime      DateTime @map("pickup_time")
   pickupLocation  String?  @map("pickup_location")

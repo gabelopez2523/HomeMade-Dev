@@ -3,17 +3,17 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { ImageUpload } from '@/components/ImageUpload'
+import { MultiImageUpload } from '@/components/MultiImageUpload'
 import { CATEGORY_OPTIONS } from '@/lib/constants'
 
 export default function NewListing() {
   const router = useRouter()
   const { data: session, status } = useSession()
+  const [imageUrls, setImageUrls] = useState<string[]>([])
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     price: '',
-    imageUrl: '',
     listingDate: '',
     pickupTime: '',
     pickupLocation: '',
@@ -67,7 +67,7 @@ export default function NewListing() {
         body: JSON.stringify({
           ...formData,
           price: parseFloat(formData.price),
-          imageUrl: formData.imageUrl || null,
+          imageUrls,
           pickupLocation: formData.pickupLocation || null,
           city: formData.city || null,
           state: formData.state || null,
@@ -197,9 +197,9 @@ export default function NewListing() {
           <p className="mt-1 text-xs text-gray-500">Describe what's included in one order.</p>
         </div>
 
-        <ImageUpload
-          onImageUploaded={(url) => setFormData({ ...formData, imageUrl: url })}
-          currentImageUrl={formData.imageUrl}
+        <MultiImageUpload
+          onImagesChanged={setImageUrls}
+          currentImageUrls={imageUrls}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
