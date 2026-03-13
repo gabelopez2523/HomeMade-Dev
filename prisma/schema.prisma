@@ -77,6 +77,22 @@ model FoodListing {
   createdAt       DateTime @default(now()) @map("created_at")
 
   seller          SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  inquiries       Inquiry[]
 
   @@map("food_listings")
+}
+
+model Inquiry {
+  id         String   @id @default(cuid())
+  listingId  String   @map("listing_id")
+  buyerName  String   @map("buyer_name")
+  buyerEmail String   @map("buyer_email")
+  buyerPhone String?  @map("buyer_phone")
+  message    String
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  listing    FoodListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("inquiries")
 }

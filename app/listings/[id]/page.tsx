@@ -26,10 +26,111 @@ interface FoodListing {
     bio: string | null
     city: string | null
     state: string | null
-    phone: string | null
-    contactEmail: string | null
     profilePictureUrl: string | null
   }
+}
+
+function InquiryForm({ listingId }: { listingId: string }) {
+  const [form, setForm] = useState({ buyerName: '', buyerEmail: '', buyerPhone: '', message: '' })
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setStatus('submitting')
+    setErrorMsg('')
+
+    try {
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingId, ...form }),
+      })
+
+      if (res.ok) {
+        setStatus('success')
+      } else {
+        const data = await res.json()
+        setErrorMsg(data.error ?? 'Something went wrong. Please try again.')
+        setStatus('error')
+      }
+    } catch {
+      setErrorMsg('Something went wrong. Please try again.')
+      setStatus('error')
+    }
+  }
+
+  if (status === 'success') {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">
+        <p className="font-medium">Message sent!</p>
+        <p className="text-sm mt-1">The seller will be in touch with you soon.</p>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-1">Your Name</label>
+          <input
+            type="text"
+            required
+            value={form.buyerName}
+            onChange={(e) => setForm({ ...form, buyerName: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-gray-900"
+            placeholder="Jane Smith"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-1">Your Email</label>
+          <input
+            type="email"
+            required
+            value={form.buyerEmail}
+            onChange={(e) => setForm({ ...form, buyerEmail: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-gray-900"
+            placeholder="jane@example.com"
+          />
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-900 mb-1">
+          Callback Number <span className="text-gray-500 font-normal">(optional)</span>
+        </label>
+        <input
+          type="tel"
+          value={form.buyerPhone}
+          onChange={(e) => setForm({ ...form, buyerPhone: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-gray-900"
+          placeholder="(555) 123-4567"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-900 mb-1">Message</label>
+        <textarea
+          required
+          value={form.message}
+          onChange={(e) => setForm({ ...form, message: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-gray-900"
+          rows={4}
+          placeholder="Hi! I'm interested in placing an order. Is this still available?"
+          maxLength={2000}
+        />
+      </div>
+      {status === 'error' && (
+        <p className="text-sm text-red-600">{errorMsg}</p>
+      )}
+      <button
+        type="submit"
+        disabled={status === 'submitting'}
+        className="bg-primary-600 text-white px-6 py-2 rounded-md font-medium hover:bg-primary-700 disabled:opacity-50"
+      >
+        {status === 'submitting' ? 'Sending...' : 'Send Message'}
+      </button>
+    </form>
+  )
 }
 
 export default function ListingDetail() {
@@ -172,46 +273,13 @@ export default function ListingDetail() {
           )}
 
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
               Contact the Seller
             </h3>
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <p className="text-gray-900 font-medium">
-                {listing.seller.user.name}
-              </p>
-              {listing.seller.phone && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-500">Phone:</span>
-                  <a
-                    href={`tel:${listing.seller.phone}`}
-                    className="text-primary-600 hover:text-primary-700 font-medium"
-                  >
-                    {listing.seller.phone}
-                  </a>
-                </div>
-              )}
-              {listing.seller.contactEmail && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-500">Email:</span>
-                  <a
-                    href={`mailto:${listing.seller.contactEmail}`}
-                    className="text-primary-600 hover:text-primary-700 font-medium"
-                  >
-                    {listing.seller.contactEmail}
-                  </a>
-                </div>
-              )}
-              {!listing.seller.phone && !listing.seller.contactEmail && (
-                <p className="text-gray-500 text-sm">
-                  This seller has not provided contact information yet.
-                </p>
-              )}
-              {listing.seller.city && listing.seller.state && (
-                <p className="text-sm text-gray-500">
-                  Seller location: {listing.seller.city}, {listing.seller.state}
-                </p>
-              )}
-            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Send {listing.seller.user.name} a message — your contact info stays private.
+            </p>
+            <InquiryForm listingId={listing.id} />
           </div>
         </div>
       </div>

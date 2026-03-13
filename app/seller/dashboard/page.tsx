@@ -31,13 +31,28 @@ interface FoodListing {
   createdAt: string
 }
 
+interface Inquiry {
+  id: string
+  buyerName: string
+  buyerEmail: string
+  buyerPhone: string | null
+  message: string
+  isRead: boolean
+  createdAt: string
+  listing: {
+    id: string
+    title: string
+  }
+}
+
 export default function SellerDashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [profile, setProfile] = useState<SellerProfile | null>(null)
   const [listings, setListings] = useState<FoodListing[]>([])
+  const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'listings' | 'profile'>('listings')
+  const [activeTab, setActiveTab] = useState<'listings' | 'inquiries' | 'profile'>('listings')
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -51,19 +66,20 @@ export default function SellerDashboard() {
 
   const fetchData = async () => {
     try {
-      const [profileRes, listingsRes] = await Promise.all([
+      const [profileRes, listingsRes, inquiriesRes] = await Promise.all([
         fetch('/api/seller/profile'),
         fetch('/api/listings?sellerId=current'),
+        fetch('/api/inquiries'),
       ])
 
       if (profileRes.ok) {
-        const profileData = await profileRes.json()
-        setProfile(profileData)
+        setProfile(await profileRes.json())
       }
-
       if (listingsRes.ok) {
-        const listingsData = await listingsRes.json()
-        setListings(listingsData)
+        setListings(await listingsRes.json())
+      }
+      if (inquiriesRes.ok) {
+        setInquiries(await inquiriesRes.json())
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -84,32 +100,45 @@ export default function SellerDashboard() {
     return null
   }
 
+  const unreadCount = inquiries.filter((i) => !i.isRead).length
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Seller Dashboard</h1>
 
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab('listings')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'listings'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            My Listings
-          </button>
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'profile'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Profile
-          </button>
+          {(
+            [
+              { key: 'listings', label: 'My Listings' },
+              {
+                key: 'inquiries',
+                label: (
+                  <span className="flex items-center gap-2">
+                    Inquiries
+                    {unreadCount > 0 && (
+                      <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold bg-primary-600 text-white rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </span>
+                ),
+              },
+              { key: 'profile', label: 'Profile' },
+            ] as const
+          ).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === key
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </nav>
       </div>
 
@@ -178,8 +207,112 @@ export default function SellerDashboard() {
         </div>
       )}
 
+      {activeTab === 'inquiries' && (
+        <InquiriesTab
+          inquiries={inquiries}
+          onMarkRead={(id) => {
+            setInquiries((prev) =>
+              prev.map((i) => (i.id === id ? { ...i, isRead: true } : i))
+            )
+          }}
+        />
+      )}
+
       {activeTab === 'profile' && (
         <ProfileTab profile={profile} onUpdate={fetchData} />
+      )}
+    </div>
+  )
+}
+
+function InquiriesTab({
+  inquiries,
+  onMarkRead,
+}: {
+  inquiries: Inquiry[]
+  onMarkRead: (id: string) => void
+}) {
+  const markRead = async (id: string) => {
+    await fetch(`/api/inquiries/${id}`, { method: 'PATCH' })
+    onMarkRead(id)
+  }
+
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold text-gray-900 mb-4">Inquiries</h2>
+
+      {inquiries.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg shadow">
+          <p className="text-gray-500 text-lg">No inquiries yet.</p>
+          <p className="text-gray-400 text-sm mt-1">
+            When buyers send you messages, they&apos;ll appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {inquiries.map((inquiry) => (
+            <div
+              key={inquiry.id}
+              className={`bg-white rounded-lg shadow-md p-6 border-l-4 ${
+                inquiry.isRead ? 'border-gray-200' : 'border-primary-500'
+              }`}
+            >
+              <div className="flex justify-between items-start gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-semibold text-gray-900">{inquiry.buyerName}</p>
+                    {!inquiry.isRead && (
+                      <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">
+                        New
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500 mb-1">
+                    <a
+                      href={`mailto:${inquiry.buyerEmail}`}
+                      className="text-primary-600 hover:underline"
+                    >
+                      {inquiry.buyerEmail}
+                    </a>
+                    {inquiry.buyerPhone && (
+                      <>
+                        {' · '}
+                        <a
+                          href={`tel:${inquiry.buyerPhone}`}
+                          className="text-primary-600 hover:underline"
+                        >
+                          {inquiry.buyerPhone}
+                        </a>
+                      </>
+                    )}
+                    {' · '}
+                    Re:{' '}
+                    <Link
+                      href={`/listings/${inquiry.listing.id}`}
+                      className="text-primary-600 hover:underline"
+                    >
+                      {inquiry.listing.title}
+                    </Link>
+                  </p>
+                  <p className="text-gray-700 mt-3 whitespace-pre-wrap">{inquiry.message}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <p className="text-xs text-gray-400 whitespace-nowrap">
+                    {new Date(inquiry.createdAt).toLocaleDateString()}
+                  </p>
+                  {!inquiry.isRead && (
+                    <button
+                      onClick={() => markRead(inquiry.id)}
+                      className="text-xs text-gray-500 hover:text-gray-700 underline"
+                    >
+                      Mark as read
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )
