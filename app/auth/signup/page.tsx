@@ -11,6 +11,7 @@ export default function SignUp() {
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     phone: '',
     contactEmail: '',
     city: '',
@@ -20,9 +21,22 @@ export default function SignUp() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d!@#$%^&*]).{8,}$/
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    if (!PASSWORD_REGEX.test(formData.password)) {
+      setError('Password must be at least 8 characters and include uppercase, lowercase, and a number or symbol.')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -32,7 +46,9 @@ export default function SignUp() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
           contactEmail: formData.contactEmail || undefined,
           phone: formData.phone || undefined,
           city: formData.city || undefined,
@@ -134,11 +150,28 @@ export default function SignUp() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={6}
+                minLength={8}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                placeholder="Password (min 6 characters)"
+                placeholder="Min 8 chars, uppercase, number or symbol"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+            </div>
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                Confirm password *
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                placeholder="Re-enter your password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               />
             </div>
 

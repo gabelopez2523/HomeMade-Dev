@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`,
       {
         headers: {
-          'User-Agent': 'HomeMade-App/1.0',
+          'User-Agent': 'HomeMunchin-App/1.0',
         },
       }
     )

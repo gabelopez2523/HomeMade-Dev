@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendInquiryNotification } from '@/lib/email'
+import { rateLimit } from '@/lib/rateLimit'
 import { z } from 'zod'
 
 const inquirySchema = z.object({
@@ -16,6 +17,18 @@ const inquirySchema = z.object({
 // POST — anyone can submit an inquiry (no auth required)
 export async function POST(request: NextRequest) {
   try {
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
+
+    if (!rateLimit(ip, 5, 60_000)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait before submitting another inquiry.' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const data = inquirySchema.parse(body)
 

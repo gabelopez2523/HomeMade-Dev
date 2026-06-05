@@ -7,8 +7,8 @@ import { Navbar } from '@/components/Navbar'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'HomeMade - Local Food Marketplace',
-  description: 'Discover homemade food from local sellers near you',
+  title: 'HomeMunchin - Local Food Marketplace',
+  description: 'Discover home-cooked food from local sellers near you',
 }
 
 export default function RootLayout({
@@ -29,5 +29,4 @@ export default function RootLayout({
     </html>
   )
 }
-
 

@@ -20,16 +20,14 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         })
 
-        if (!user) {
-          return null
-        }
-
+        // Always run bcrypt so response time doesn't reveal whether the email exists
+        const DUMMY_HASH = '$2a$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012345'
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
-          user.passwordHash
+          user?.passwordHash ?? DUMMY_HASH
         )
 
-        if (!isPasswordValid) {
+        if (!user || !isPasswordValid) {
           return null
         }
 

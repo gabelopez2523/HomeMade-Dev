@@ -8,8 +8,7 @@ interface FoodListing {
   id: string
   title: string
   description: string | null
-  price: number
-  imageUrl: string | null
+  price: string | number
   imageUrls: string[]
   listingDate: string
   pickupTime: string
@@ -177,11 +176,7 @@ export default function ListingDetail() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         {(() => {
-          const allImages = listing.imageUrls?.length
-            ? listing.imageUrls
-            : listing.imageUrl
-            ? [listing.imageUrl]
-            : []
+          const allImages = listing.imageUrls ?? []
           if (!allImages.length) return null
           return (
             <div>
@@ -217,9 +212,24 @@ export default function ListingDetail() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {listing.title}
           </h1>
-          <p className="text-lg text-gray-600 mb-4">
-            by {listing.seller.user.name}
-          </p>
+          <div className="flex items-center gap-3 mb-4">
+            {listing.seller.profilePictureUrl ? (
+              <Image
+                src={listing.seller.profilePictureUrl}
+                alt={listing.seller.user.name}
+                width={36}
+                height={36}
+                className="rounded-full object-cover w-9 h-9 shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
+                <span className="text-sm font-medium text-primary-700">
+                  {listing.seller.user.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+            <p className="text-lg text-gray-600">by {listing.seller.user.name}</p>
+          </div>
 
           {listing.description && (
             <p className="text-gray-700 mb-6">{listing.description}</p>

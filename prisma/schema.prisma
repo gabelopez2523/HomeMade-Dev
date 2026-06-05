@@ -32,6 +32,7 @@ model SellerProfile {
   phone             String?
   contactEmail      String?  @map("contact_email")
   profilePictureUrl String?  @map("profile_picture_url")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   foodListings      FoodListing[]
@@ -58,27 +59,31 @@ enum FoodCategory {
 }
 
 model FoodListing {
-  id              String   @id @default(cuid())
-  sellerId        String   @map("seller_id")
-  title           String
-  description     String?
-  price           Float
-  imageUrl        String?  @map("image_url")
-  imageUrls       String[] @default([]) @map("image_urls")
-  listingDate     DateTime @map("listing_date")
-  pickupTime      DateTime @map("pickup_time")
-  pickupLocation  String?  @map("pickup_location")
-  city            String?
-  state           String?
-  zipCode         String?  @map("zip_code")
+  id                 String        @id @default(cuid())
+  sellerId           String        @map("seller_id")
+  title              String
+  description        String?
+  price              Decimal       @db.Decimal(10, 2)
+  imageUrls          String[]      @default([]) @map("image_urls")
+  listingDate        DateTime      @map("listing_date")
+  pickupTime         DateTime      @map("pickup_time")
+  pickupLocation     String?       @map("pickup_location")
+  city               String?
+  state              String?
+  zipCode            String?       @map("zip_code")
   category           FoodCategory? @default(OTHER)
   servingDescription String?       @map("serving_description")
   isActive           Boolean       @default(true) @map("is_active")
-  createdAt       DateTime @default(now()) @map("created_at")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
 
-  seller          SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  inquiries       Inquiry[]
+  seller    SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  inquiries Inquiry[]
 
+  @@index([sellerId])
+  @@index([isActive, category])
+  @@index([isActive, city, state])
+  @@index([createdAt])
   @@map("food_listings")
 }
 
@@ -94,5 +99,6 @@ model Inquiry {
 
   listing    FoodListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
+  @@index([listingId, createdAt])
   @@map("inquiries")
 }

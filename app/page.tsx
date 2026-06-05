@@ -26,8 +26,8 @@ interface FoodListing {
   id: string
   title: string
   description: string | null
-  price: number
-  imageUrl: string | null
+  price: string | number
+  imageUrls: string[]
   listingDate: string
   pickupTime: string
   pickupLocation: string | null
@@ -37,6 +37,7 @@ interface FoodListing {
   category: string | null
   servingDescription: string | null
   seller: {
+    profilePictureUrl: string | null
     user: {
       name: string
     }
@@ -44,6 +45,21 @@ interface FoodListing {
 }
 
 function ListingCard({ listing }: { listing: FoodListing }) {
+  const images = listing.imageUrls ?? []
+  const [index, setIndex] = useState(0)
+
+  const prev = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIndex((i) => (i - 1 + images.length) % images.length)
+  }
+
+  const next = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIndex((i) => (i + 1) % images.length)
+  }
+
   return (
     <Link
       href={`/listings/${listing.id}`}
@@ -51,23 +67,64 @@ function ListingCard({ listing }: { listing: FoodListing }) {
       rel="noopener noreferrer"
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
     >
-      {listing.imageUrl && (
-        <div className="relative h-48 w-full">
+      {images.length > 0 && (
+        <div className="relative h-48 w-full group">
           <Image
-            src={listing.imageUrl}
-            alt={listing.title}
+            src={images[index]}
+            alt={`${listing.title} photo ${index + 1}`}
             fill
             className="object-cover"
           />
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={prev}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Previous photo"
+              >
+                ‹
+              </button>
+              <button
+                onClick={next}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Next photo"
+              >
+                ›
+              </button>
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                {images.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full ${i === index ? 'bg-white' : 'bg-white/50'}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
       <div className="p-4">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           {listing.title}
         </h3>
-        <p className="text-gray-600 text-sm mb-2">
-          by {listing.seller.user.name}
-        </p>
+        <div className="flex items-center gap-2 mb-2">
+          {listing.seller.profilePictureUrl ? (
+            <Image
+              src={listing.seller.profilePictureUrl}
+              alt={listing.seller.user.name}
+              width={24}
+              height={24}
+              className="rounded-full object-cover w-6 h-6 shrink-0"
+            />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
+              <span className="text-xs font-medium text-primary-700">
+                {listing.seller.user.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+          <p className="text-gray-600 text-sm">by {listing.seller.user.name}</p>
+        </div>
         {listing.description && (
           <p className="text-gray-700 mb-3 line-clamp-2">
             {listing.description}
@@ -249,10 +306,10 @@ export default function Home() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          Discover Local Homemade Food
+          Discover Local Home Munchies
         </h1>
         <p className="text-xl text-gray-600 mb-6">
-          Find homemade meals from local cooks near you
+          Find home-cooked meals from local cooks near you
         </p>
         <SearchBar
           onSearch={handleSearch}
@@ -288,7 +345,7 @@ export default function Home() {
       ) : !searched ? (
         <div className="text-center py-16">
           <p className="text-gray-500 text-lg">
-            Enter a location and search for homemade food nearby.
+            Enter a location and search for HomeMunchin nearby.
           </p>
         </div>
       ) : (

@@ -26,7 +26,7 @@ export async function sendInquiryNotification({
   const dashboardUrl = `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/seller/dashboard`
 
   await resend.emails.send({
-    from: 'HomeMade <onboarding@resend.dev>',
+    from: 'HomeMunchin <onboarding@resend.dev>',
     to: sellerEmail,
     subject: `New inquiry about "${listingTitle}"`,
     html: `
@@ -41,7 +41,7 @@ export async function sendInquiryNotification({
         <a href="${dashboardUrl}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background: #ff5c00; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
           View in Dashboard
         </a>
-        <p style="margin-top: 32px; font-size: 12px; color: #999;">You received this email because someone submitted an inquiry on HomeMade.</p>
+        <p style="margin-top: 32px; font-size: 12px; color: #999;">You received this email because someone submitted an inquiry on HomeMunchin.</p>
       </div>
     `,
   })

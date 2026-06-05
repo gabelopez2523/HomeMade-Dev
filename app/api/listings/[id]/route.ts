@@ -9,7 +9,7 @@ const updateListingSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional().nullable(),
   price: z.number().positive().optional(),
-  imageUrl: z.string().url().optional().nullable(),
+  imageUrls: z.array(z.string().url()).optional(),
   listingDate: z.string().min(1).optional(),
   pickupTime: z.string().min(1).optional(),
   pickupLocation: z.string().optional().nullable(),

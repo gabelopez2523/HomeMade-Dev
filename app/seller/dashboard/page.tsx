@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface SellerProfile {
   id: string
@@ -336,6 +337,28 @@ function ProfileTab({
     profilePictureUrl: profile?.profilePictureUrl || '',
   })
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const data = new FormData()
+      data.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: data })
+      if (res.ok) {
+        const { url } = await res.json()
+        setFormData((prev) => ({ ...prev, profilePictureUrl: url }))
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -365,11 +388,28 @@ function ProfileTab({
       <div className="bg-white rounded-lg shadow-md p-6">
         {profile && (
           <>
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {profile.user.name}
-              </h3>
-              <p className="text-gray-600">{profile.user.email}</p>
+            <div className="flex items-center gap-4 mb-4">
+              {profile.profilePictureUrl ? (
+                <Image
+                  src={profile.profilePictureUrl}
+                  alt={profile.user.name}
+                  width={64}
+                  height={64}
+                  className="rounded-full object-cover w-16 h-16 shrink-0"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
+                  <span className="text-xl font-medium text-primary-700">
+                    {profile.user.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {profile.user.name}
+                </h3>
+                <p className="text-gray-600">{profile.user.email}</p>
+              </div>
             </div>
 
             {!editing ? (
@@ -494,18 +534,52 @@ function ProfileTab({
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Profile Picture URL
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Profile Picture
                   </label>
-                  <input
-                    type="url"
-                    value={formData.profilePictureUrl}
-                    onChange={(e) =>
-                      setFormData({ ...formData, profilePictureUrl: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="https://..."
-                  />
+                  <div className="flex items-center gap-4">
+                    {formData.profilePictureUrl ? (
+                      <Image
+                        src={formData.profilePictureUrl}
+                        alt="Profile picture"
+                        width={64}
+                        height={64}
+                        className="rounded-full object-cover w-16 h-16 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
+                        <span className="text-xl font-medium text-primary-700">
+                          {profile?.user.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={handleProfilePictureUpload}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        {uploading ? 'Uploading...' : 'Upload Photo'}
+                      </button>
+                      {formData.profilePictureUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, profilePictureUrl: '' }))}
+                          className="text-sm text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex space-x-2">
                   <button

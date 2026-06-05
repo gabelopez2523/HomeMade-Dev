@@ -10,8 +10,8 @@ const profileSchema = z.object({
   state: z.string().optional(),
   zipCode: z.string().optional(),
   phone: z.string().optional(),
-  contactEmail: z.string().email().optional().nullable(),
-  profilePictureUrl: z.string().url().optional().nullable(),
+  contactEmail: z.preprocess((v) => (v === '' ? null : v), z.string().email().optional().nullable()),
+  profilePictureUrl: z.preprocess((v) => (v === '' ? null : v), z.string().url().optional().nullable()),
 })
 
 export async function GET(request: NextRequest) {

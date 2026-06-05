@@ -3,15 +3,15 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { ImageUpload } from '@/components/ImageUpload'
+import { MultiImageUpload } from '@/components/MultiImageUpload'
 import { CATEGORY_OPTIONS } from '@/lib/constants'
 
 interface FoodListing {
   id: string
   title: string
   description: string | null
-  price: number
-  imageUrl: string | null
+  price: string | number
+  imageUrls: string[]
   listingDate: string
   pickupTime: string
   pickupLocation: string | null
@@ -31,7 +31,7 @@ export default function EditListing() {
     title: '',
     description: '',
     price: '',
-    imageUrl: '',
+    imageUrls: [] as string[],
     listingDate: '',
     pickupTime: '',
     pickupLocation: '',
@@ -64,7 +64,7 @@ export default function EditListing() {
           title: data.title,
           description: data.description || '',
           price: data.price.toString(),
-          imageUrl: data.imageUrl || '',
+          imageUrls: data.imageUrls ?? [],
           listingDate: new Date(data.listingDate).toISOString().slice(0, 16),
           pickupTime: new Date(data.pickupTime).toISOString().slice(0, 16),
           pickupLocation: data.pickupLocation || '',
@@ -97,7 +97,7 @@ export default function EditListing() {
         body: JSON.stringify({
           ...formData,
           price: parseFloat(formData.price),
-          imageUrl: formData.imageUrl || null,
+          imageUrls: formData.imageUrls,
           pickupLocation: formData.pickupLocation || null,
           city: formData.city || null,
           state: formData.state || null,
@@ -166,9 +166,9 @@ export default function EditListing() {
           </div>
         )}
 
-        <ImageUpload
-          onImageUploaded={(url) => setFormData({ ...formData, imageUrl: url })}
-          currentImageUrl={formData.imageUrl}
+        <MultiImageUpload
+          onImagesChanged={(urls) => setFormData({ ...formData, imageUrls: urls })}
+          currentImageUrls={formData.imageUrls}
         />
 
         <div>

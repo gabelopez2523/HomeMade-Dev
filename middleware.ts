@@ -1,12 +1,11 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { withAuth } from 'next-auth/middleware'
 
-export function middleware(request: NextRequest) {
-  return NextResponse.next()
-}
+export default withAuth({
+  pages: {
+    signIn: '/auth/signin',
+  },
+})
 
 export const config = {
-  matcher: [
-    '/seller/:path*',
-  ],
+  matcher: ['/seller/:path*'],
 }

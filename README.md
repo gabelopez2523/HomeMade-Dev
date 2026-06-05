@@ -1,4 +1,4 @@
-# 🥘 HomeMade - Local Food Marketplace
+# 🥘 HomeMunchin - Local Food Marketplace
 
 A platform that connects individual home cooks with local consumers, enabling cooks to post available food items and consumers to place orders for pickup.
 
@@ -44,7 +44,7 @@ A platform that connects individual home cooks with local consumers, enabling co
 1. Clone the repository:
 ```bash
 git clone <your-repo-url>
-cd HomeMade
+cd HomeMunchin
 ```
 
 2. Install dependencies:
@@ -56,7 +56,7 @@ npm install
 Create a `.env` file in the root directory:
 ```env
 # Database
-DATABASE_URL="postgresql://user:password@localhost:5432/homemade?schema=public"
+DATABASE_URL="postgresql://user:password@localhost:5432/homemunchin?schema=public"
 
 # NextAuth
 NEXTAUTH_URL="http://localhost:3000"
@@ -121,7 +121,7 @@ npm run dev
 ## Project Structure
 
 ```
-HomeMade/
+HomeMunchin/
 ├── app/
 │   ├── api/              # API routes
 │   │   ├── auth/         # Authentication endpoints
@@ -176,5 +176,4 @@ HomeMade/
 ## License
 
 MIT
-
 
