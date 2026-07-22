@@ -88,6 +88,12 @@ export async function GET(request: NextRequest) {
       where.isActive = true
     }
 
+    // For public browse (not a seller viewing their own listings), exclude expired and sold
+    if (!sellerId) {
+      where.pickupTime = { gt: new Date() }
+      where.soldAt = null
+    }
+
     // Location resolution — new unified `location` param
     let resolvedLocation: { exactZips: string[]; primaryZip: string } | null = null
 

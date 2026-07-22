@@ -24,8 +24,9 @@ interface SellerProfile {
 interface FoodListing {
   id: string
   title: string
-  price: number
+  price: string | number
   isActive: boolean
+  soldAt: string | null
   pickupTime: string
   city: string | null
   state: string | null
@@ -102,6 +103,25 @@ export default function SellerDashboard() {
   }
 
   const unreadCount = inquiries.filter((i) => !i.isRead).length
+  const now = new Date()
+  const activeListings = listings.filter(
+    (l) => l.isActive && !l.soldAt && new Date(l.pickupTime) > now
+  )
+  const soldListings = listings.filter((l) => l.soldAt !== null)
+  const pastListings = listings.filter(
+    (l) => !l.soldAt && new Date(l.pickupTime) <= now
+  )
+
+  const markSold = async (id: string, sold: boolean) => {
+    await fetch(`/api/listings/${id}/sold`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sold }),
+    })
+    setListings((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, soldAt: sold ? new Date().toISOString() : null } : l))
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -145,7 +165,7 @@ export default function SellerDashboard() {
 
       {activeTab === 'listings' && (
         <div>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold text-gray-900">My Food Listings</h2>
             <Link
               href="/seller/listings/new"
@@ -168,41 +188,26 @@ export default function SellerDashboard() {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {listings.map((listing) => (
-                <div
-                  key={listing.id}
-                  className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      {listing.title}
-                    </h3>
-                    {!listing.isActive && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded">
-                        Inactive
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-2xl font-bold text-primary-600 mb-2">
-                    ${listing.price.toFixed(2)}
-                  </p>
-                  {listing.city && listing.state && (
-                    <p className="text-sm text-gray-500 mb-2">
-                      {listing.city}, {listing.state}
-                    </p>
-                  )}
-                  <p className="text-sm text-gray-500 mb-4">
-                    Pickup: {new Date(listing.pickupTime).toLocaleString()}
-                  </p>
-                  <Link
-                    href={`/seller/listings/${listing.id}`}
-                    className="text-primary-600 hover:text-primary-700 text-sm font-medium"
-                  >
-                    View/Edit
-                  </Link>
-                </div>
-              ))}
+            <div className="space-y-10">
+              <ListingSection
+                title="Active"
+                listings={activeListings}
+                emptyText="No active listings."
+                onMarkSold={(id) => markSold(id, true)}
+                showSoldButton
+              />
+              <ListingSection
+                title="Past"
+                listings={pastListings}
+                emptyText="No past listings."
+              />
+              <ListingSection
+                title="Sold"
+                listings={soldListings}
+                emptyText="No sold listings yet."
+                onMarkUnsold={(id) => markSold(id, false)}
+                showUnsoldButton
+              />
             </div>
           )}
         </div>
@@ -221,6 +226,98 @@ export default function SellerDashboard() {
 
       {activeTab === 'profile' && (
         <ProfileTab profile={profile} onUpdate={fetchData} />
+      )}
+    </div>
+  )
+}
+
+function ListingSection({
+  title,
+  listings,
+  emptyText,
+  onMarkSold,
+  onMarkUnsold,
+  showSoldButton,
+  showUnsoldButton,
+}: {
+  title: string
+  listings: FoodListing[]
+  emptyText: string
+  onMarkSold?: (id: string) => void
+  onMarkUnsold?: (id: string) => void
+  showSoldButton?: boolean
+  showUnsoldButton?: boolean
+}) {
+  return (
+    <div>
+      <h3 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        {title}
+        <span className="text-sm font-normal text-gray-400">({listings.length})</span>
+      </h3>
+      {listings.length === 0 ? (
+        <p className="text-sm text-gray-400 py-4">{emptyText}</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {listings.map((listing) => (
+            <div
+              key={listing.id}
+              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="text-lg font-semibold text-gray-900 leading-snug">
+                  {listing.title}
+                </h4>
+                <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
+                  {listing.soldAt && (
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
+                      Sold
+                    </span>
+                  )}
+                  {!listing.isActive && !listing.soldAt && (
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-medium rounded">
+                      Inactive
+                    </span>
+                  )}
+                </div>
+              </div>
+              <p className="text-xl font-bold text-primary-600 mb-1">
+                ${Number(listing.price).toFixed(2)}
+              </p>
+              {listing.city && listing.state && (
+                <p className="text-sm text-gray-500 mb-1">
+                  {listing.city}, {listing.state}
+                </p>
+              )}
+              <p className="text-sm text-gray-500 mb-4">
+                Pickup: {new Date(listing.pickupTime).toLocaleString()}
+              </p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Link
+                  href={`/seller/listings/${listing.id}`}
+                  className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                >
+                  View/Edit
+                </Link>
+                {showSoldButton && onMarkSold && (
+                  <button
+                    onClick={() => onMarkSold(listing.id)}
+                    className="text-sm text-green-600 hover:text-green-800 font-medium"
+                  >
+                    Mark as Sold
+                  </button>
+                )}
+                {showUnsoldButton && onMarkUnsold && (
+                  <button
+                    onClick={() => onMarkUnsold(listing.id)}
+                    className="text-sm text-gray-400 hover:text-gray-600 font-medium"
+                  >
+                    Unmark Sold
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )

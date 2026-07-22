@@ -26,7 +26,7 @@ export async function sendInquiryNotification({
   const dashboardUrl = `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/seller/dashboard`
 
   await resend.emails.send({
-    from: 'HomeMunchin <onboarding@resend.dev>',
+    from: 'HomeMunchin <no-reply@notifications.homemunchin.com>',
     to: sellerEmail,
     subject: `New inquiry about "${listingTitle}"`,
     html: `

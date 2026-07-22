@@ -74,6 +74,7 @@ model FoodListing {
   category           FoodCategory? @default(OTHER)
   servingDescription String?       @map("serving_description")
   isActive           Boolean       @default(true) @map("is_active")
+  soldAt             DateTime?     @map("sold_at")
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @updatedAt @map("updated_at")
 
