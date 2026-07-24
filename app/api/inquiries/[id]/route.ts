@@ -6,9 +6,10 @@ import { prisma } from '@/lib/prisma'
 // PATCH — mark inquiry as read (seller only)
 export async function PATCH(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -24,7 +25,7 @@ export async function PATCH(
 
     // Verify the inquiry belongs to this seller's listing
     const inquiry = await prisma.inquiry.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { listing: { select: { sellerId: true } } },
     })
 
@@ -37,7 +38,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.inquiry.update({
-      where: { id: params.id },
+      where: { id },
       data: { isRead: true },
     })
 

@@ -239,7 +239,7 @@ export default function ListingDetail() {
             <div>
               <h3 className="text-sm font-medium text-gray-500 mb-1">Price per Order</h3>
               <p className="text-3xl font-bold text-primary-600">
-                ${listing.price.toFixed(2)}
+                ${Number(listing.price).toFixed(2)}
               </p>
               {listing.servingDescription && (
                 <p className="text-sm text-gray-500 mt-1">{listing.servingDescription}</p>

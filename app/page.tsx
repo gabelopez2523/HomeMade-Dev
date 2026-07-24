@@ -133,7 +133,7 @@ function ListingCard({ listing }: { listing: FoodListing }) {
         <div className="flex justify-between items-center">
           <div>
             <span className="text-2xl font-bold text-primary-600">
-              ${listing.price.toFixed(2)}
+              ${Number(listing.price).toFixed(2)}
             </span>
             <span className="text-xs text-gray-500 ml-1">/ order</span>
             {listing.servingDescription && (

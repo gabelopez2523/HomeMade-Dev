@@ -24,11 +24,12 @@ const updateListingSchema = z.object({
 // GET - Get a specific listing with seller contact info
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const listing = await prisma.foodListing.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         seller: {
           select: {
@@ -69,9 +70,10 @@ export async function GET(
 // PUT - Update a listing (owner only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
 
     if (!session?.user) {
@@ -85,7 +87,7 @@ export async function PUT(
     const data = updateListingSchema.parse(body)
 
     const existingListing = await prisma.foodListing.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         seller: true,
       },
@@ -114,7 +116,7 @@ export async function PUT(
     }
 
     const listing = await prisma.foodListing.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         seller: {
@@ -149,9 +151,10 @@ export async function PUT(
 // DELETE - Delete a listing (owner only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
 
     if (!session?.user) {
@@ -162,7 +165,7 @@ export async function DELETE(
     }
 
     const existingListing = await prisma.foodListing.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         seller: true,
       },
@@ -183,7 +186,7 @@ export async function DELETE(
     }
 
     await prisma.foodListing.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({ message: 'Listing deleted' })

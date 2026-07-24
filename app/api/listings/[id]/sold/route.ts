@@ -6,16 +6,17 @@ import { prisma } from '@/lib/prisma'
 // PATCH — toggle sold status on a listing the current seller owns
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const existing = await prisma.foodListing.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { seller: true },
     })
 
@@ -31,7 +32,7 @@ export async function PATCH(
     const markSold: boolean = body.sold ?? true
 
     const listing = await prisma.foodListing.update({
-      where: { id: params.id },
+      where: { id },
       data: { soldAt: markSold ? new Date() : null },
     })
 
