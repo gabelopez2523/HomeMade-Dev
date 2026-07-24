@@ -24,12 +24,18 @@ const registerSchema = z.object({
 const DUMMY_HASH = '$2a$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012345'
 
 export async function POST(request: NextRequest) {
-  // CSRF: reject requests whose origin doesn't match the app's own origin
+  // CSRF: reject requests whose origin doesn't match the server's own host
   const origin = request.headers.get('origin')
-  const appOrigin = process.env.NEXTAUTH_URL
-    ? new URL(process.env.NEXTAUTH_URL).origin
-    : `https://${request.headers.get('host')}`
-  if (!origin || origin !== appOrigin) {
+  const host = request.headers.get('host')
+  if (!origin || !host) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  const allowedOrigins = [
+    `https://${host}`,
+    `http://${host}`,
+    ...(process.env.NEXTAUTH_URL ? [new URL(process.env.NEXTAUTH_URL).origin] : []),
+  ]
+  if (!allowedOrigins.includes(origin)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
