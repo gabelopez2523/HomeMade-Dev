@@ -2,6 +2,8 @@
 
 A platform that connects individual home cooks with local consumers, enabling cooks to post available food items and consumers to place orders for pickup.
 
+_**NOTE: This repo is public merely to demonstrate the concept of my idea. The full production repo is managed privately.**_
+
 ## Features
 
 ### 👩‍🍳 Cook Side
